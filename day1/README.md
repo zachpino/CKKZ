@@ -1,8 +1,12 @@
 # Sensors and Actuators
 
-Let's wire-up some sensors and build some datasets!
+Let's wire-up some sensors and build some plant datasets!
 
+-----
 
+### Raspberry Pi Pinout
+
+![pinout](https://www.raspberrypi-spy.co.uk/wp-content/uploads/2012/06/raspberry_pi_3_model_b_plus_gpio.jpg)
 
 -----
 
