@@ -143,7 +143,7 @@ veml7700 = adafruit_veml7700.VEML7700(i2c)
 
 #Loop forever
 while True:
-    print("Ambient light:", str(veml7700.light))
+    print("Ambient light:", str(veml7700.lux))
     time.sleep(1)
 ```
 
@@ -350,7 +350,7 @@ while True:
 
 ### All Sensor Code
 
-This code should log data to a csv file
+This code logs data from all connected sensors to a csv file with configurable delays.
 
 ```python
 #necessary Python modules
@@ -366,18 +366,20 @@ from adafruit_seesaw.seesaw import Seesaw
 import csv
 
 # behavior config
-filename = "log.csv"
-writeFrequency = 10
+#filename prefix -- filenames will include timestamps and extension automatically
+filename = "log"
+#delay in seconds between sensor readings
+writeFrequency = 60
 
 # Create library object using our Bus I2C port
-i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
+i2c = busio.I2C(board.SCL, board.SDA)
 
 # Create sensor objects
 si7021 = adafruit_si7021.SI7021(i2c)
 veml7700 = adafruit_veml7700.VEML7700(i2c)
 ads = ADS.ADS1115(i2c)
 sgp30 = adafruit_sgp30.Adafruit_SGP30(i2c)
-stemma = Seesaw(i2c_bus, addr=0x36)
+stemma = Seesaw(i2c, addr=0x36)
 
 #sgp configuration
 sgp30.iaq_init()
@@ -387,29 +389,39 @@ sgp30.set_iaq_baseline(0x8973, 0x8AAE)
 ads.gain = 8
 
 
+#include timestamp in filename
+filename = filename + "-" + time.strftime("%Y-%m-%d-%H-%M-%S") + ".csv"
+
 # Create header row in new CSV file
 with open(filename, 'w') as csvFile
-    csvFile.write("Date,Time,Temperature F,Humidity,Light,CO2,TVOC,Gas Voltage,Soil Moisture,Soil Temperature F\n")
+    csvFile.write("Date,Time,Temperature F,Humidity,Light,eCO2,TVOC,Gas Voltage,Soil Moisture,Soil Temperature F\n")
     csv.close
 
 
 # Loop forever 
 with open(filename, 'a') as csvFile            
-while True:
-    #read sensors
-    temperature = str((si7021.temperature * (9/5)) + 32)
-    humidity = str(si7021.relative_humidity)
-    light = str(veml7700.lux)
-    eCO2 = str(sgp30.eCO2)
-    tvoc = str(sgp30.TVOC)
-    gas = str(AnalogIn(ads, ADS.P0).value)
-    soilMoisture = str(stemma.moisture_read())
-    soilTemperature = str( (stemma.get_temp() * (9.5)) + 32)
-    nowTime = time.strftime("%Y-%m-%d")
-    nowDate = time.strftime("%H:%M:%S")
-    
-    csvFile.write( nowDate , nowTime , temperature, humidity , light, eCO2, tvoc, gas, soilMoisture, soilTemperature )
-    
-    time.sleep(writeFrequency)
+    while True:
+        #read sensors
+        temperature = str((si7021.temperature * (9/5)) + 32)
+        humidity = str(si7021.relative_humidity)
+        light = str(veml7700.lux)
+        eCO2 = str(sgp30.eCO2)
+        tvoc = str(sgp30.TVOC)
+        gas = str(AnalogIn(ads, ADS.P0).value)
+        soilMoisture = str(stemma.moisture_read())
+        soilTemperature = str( (stemma.get_temp() * (9.5)) + 32)
+        nowTime = time.strftime("%Y-%m-%d")
+        nowDate = time.strftime("%H:%M:%S")
+        
+        #collect readings
+        data = [nowDate,nowTime,temperature,humidity,light,eCO2,tvoc,gas,soilMoisture,soilTemperature]
+        
+        #convert list to comma separated string and add new line
+        dataString = (','.join(data)) + "\n"
+
+        #write data to file
+        csvFile.write( dataString)
+        
+        time.sleep(writeFrequency)
 ```
 
